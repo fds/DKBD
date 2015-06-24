@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+<title>蹲坑宝典</title>
+<link href="../css/mui.min.css" rel="stylesheet"/>
+<link href="../css/style.css" rel="stylesheet"/>
+<link href="../css/font-awesome.min.css" rel="stylesheet"/>
+</head>
+
+<body>
+<header class="mui-bar mui-bar-nav">
+  <div class="title">
+  	 <a href="#" class="mui-btn mui-btn-link mui-btn-nav mui-pull-left mui-action-back"><span class="mui-icon mui-icon-back"></span>登录/注册</a>
+  </div>
+</header>
+<div class="page mui-content" style="padding-top:50px;">
+  <div class="account">
+    <h3>蹲坑账号登录</h3>
+    <p><input type="text" placeholder="邮箱/昵称" value="" id="loginname"></p>
+    <p><input type="password" placeholder="密码" value="" id="loginpwd"></p>
+    <p ><a class="login" href="javascript:dataArr.login()" id='login'>登录</a></p>
+    <p class="links"><a href="#">忘记密码？</a><a class="regist" href="javascript:dataArr.register()">免费注册</a></p>
+  </div>
+<!--  <div class="other-account">
+    <h3>合作账号登录/注册</h3>
+    <p class="icon-sina"><a href="#"><b class="fa fa-weibo"></b>新浪微博帐号登录</a></p>
+    <p class="icon-qq"><a href="#"><b class="fa fa-qq"></b>QQ帐号登录</a></p>
+    <p class="icon-weibo"><a href="#"><b class="fa fa-wechat"></b>腾讯微博帐号登录</a></p>
+  </div>-->
+</div>
+<script src="../js/mui.min.js"></script>
+<script src="../js/common/string.js"></script>
+<script src="../js/common/basepage.js"></script>
+<script type="text/javascript" charset="utf-8">
+var dataArr={
+	islogin:true,
+	login:function(){
+		if(dataArr.islogin){
+			var name=document.getElementById("loginname").value.trim();
+			var pwd=document.getElementById("loginpwd").value.trim();
+			
+			if(name.length<1||pwd.length<1)
+			{
+				databasepage.alert("请输入用户名或密码")
+				return;
+			}
+			dataArr.islogin=false;
+			document.getElementById("login").innerText="正在登录...";
+			//登陆验证
+			xhr = new XMLHttpRequest();
+			xhr.onreadystatechange = function () {
+				if (xhr.readyState == 4 &&xhr.status == 200) {
+					var data = eval("(" + xhr.responseText + ")");
+					if(data.data!=null){
+						databasepage.setItem("DKBD_USER",data.data)
+						var currview=plus.webview.currentWebview();
+						plus.webview.close(currview);
+					}
+					else{
+						databasepage.alert(data.message)
+						document.getElementById("login").innerText="登录";
+					}
+				}
+				else{
+					dataArr.islogin=true;
+				}
+			};
+			xhr.open('GET', databasepage.loginurl()+'?userName='+name+'&passWord='+pwd);
+			xhr.send();
+		}
+	},
+	register:function(){
+		//防止登陆时点击注册
+		if(dataArr.islogin){
+			databasepage.openWin("register","register.html")
+		}
+	}
+};
+
+mui.init();
+</script>
+</body>
+</html>

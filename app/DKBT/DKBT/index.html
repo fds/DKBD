@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+<title>蹲坑宝典</title>
+<link href="css/mui.min.css" rel="stylesheet"/>
+<link href="css/font-awesome.min.css" rel="stylesheet" />
+<link href="css/style.css" rel="stylesheet" />
+<script src="js/mui.min.js"></script>
+<script src="js/common/basepage.js"></script>
+<script src="js/common/update.js"></script>
+</head>
+<body>
+	
+<nav class="bottom-nav mui-bar mui-bar-tab" id="mui-bottom">
+	<a class="mui-tab-item mui-active" href="list.html" id='list.html'>
+		<span class="mui-icon fa fa-random"></span>
+		<span class="mui-tab-label">穿越</span>
+	</a>
+	<a class="mui-tab-item" href="app/rank.html" id='app/rank.html'>
+		<span class="mui-icon fa fa-list-alt"></span>
+		<span class="mui-tab-label">排行</span>
+	</a>
+	<a class="mui-tab-item" href="app/discover.html" id='app/discover.html'>
+		<span class="mui-icon fa fa-eye"></span>
+		<span class="mui-tab-label">发现</span>
+	</a>
+	<a class="mui-tab-item" href="app/notes.html" id='app/notes.html'>
+		<span class="mui-icon fa fa-send-o"></span>
+		<span class="mui-tab-label">小纸条</span>
+	</a>
+	<a class="mui-tab-item" href="app/my.html" id='app/my.html'>
+		<span class="mui-icon fa fa-user"></span>
+		<span class="mui-tab-label">我的</span>
+	</a>
+</nav>
+
+<script type="text/javascript" charset="utf-8">
+    mui.init();
+    var first = null;
+    mui.back = function () {
+        //首次按键，提示‘再按一次退出应用’
+        if (!first) {
+            first = new Date().getTime();
+            mui.toast('再按一次退出应用');
+            setTimeout(function () {
+                first = null;
+            }, 1000);
+        } else {
+            if (new Date().getTime() - first < 1000) {
+                plus.runtime.quit();
+            }
+        }
+
+    };
+
+    var subpages = ['list.html','app/rank.html','app/discover.html','app/notes.html','app/my.html'];
+    var subpage_style = {
+	    bottom: '50px'
+    };
+    //创建子页面，首个选项卡页面显示，其它均隐藏；
+    mui.plusReady(function(){
+	    var self = plus.webview.currentWebview();
+	    for(var i=0;i<5;i++){
+		    var sub = plus.webview.create(subpages[i],subpages[i],subpage_style,{preate:true});
+		    if(i>0){
+			    sub.hide();
+		    }
+		    self.append(sub);
+	    }
+    });
+
+    //当前激活选项
+    var activeTab = subpages[0];
+    //选项卡点击事件
+    mui('.mui-bar-tab').on('tap', 'a', function(e) {
+	    var targetTab = this.getAttribute('href');
+	    if (targetTab == activeTab) {
+		    return;
+	    }
+
+        //在”我的“页面之前判断是否注册登录
+	    if (targetTab == subpages[4]) {
+	        if (databasepage.getItem("DKBD_USER") == null) {
+				e.stopPropagation();
+	            databasepage.openWin2('app/login.html', 'login', { preload: true })
+	            return;
+	        }
+	        var wt=plus.webview.getWebviewById('app/my.html');
+	        wt.evalJS('dataArr.init()');
+	    }
+
+	    //显示目标选项卡
+	    plus.webview.show(targetTab);
+	    //隐藏当前;
+	    plus.webview.hide(activeTab);
+	    //更改当前活跃的选项卡
+	    activeTab = targetTab;
+	    
+    });
+    
+    //用户注册成功后直接跳到我的页面
+    function redicMy(){
+    	var targetTab = 'app/my.html';
+    	if (targetTab == activeTab) {//如果当前是我的页面，不处理
+		    return;
+	    }
+    	var wt=plus.webview.getWebviewById(targetTab);
+        wt.evalJS('dataArr.init()');    
+	    plus.webview.show(targetTab);//显示目标选项卡
+	    plus.webview.hide(activeTab);//隐藏当前;
+	    document.getElementById(activeTab).className='mui-tab-item'
+	    activeTab = targetTab;//更改当前活跃的选项卡
+  		document.getElementById(targetTab).className='mui-tab-item mui-active'
+    }
+</script>
+ 
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+<title>蹲坑宝典</title>
+<link href="../css/mui.min.css" rel="stylesheet"/>
+<link href="../css/style.css" rel="stylesheet"/>
+<link href="../css/font-awesome.min.css" rel="stylesheet"/>
+<style>
+html,body { background-color: #EFEFEF;}
+.mui-bar .mui-title{ right:80px; left:80px;}
+</style>
+</head>
+
+<body>
+<header class="mui-bar mui-bar-nav">
+  <div class="title">
+  	<a href="#" class="mui-btn mui-btn-link mui-btn-nav mui-pull-left mui-action-back"><span class="mui-icon mui-icon-back"></span>返回</a>
+  	<h1 class="mui-title">我的帖子</h1>
+  </div>
+</header>
+<div class="mui-content mui-scroll-wrapper" id="pullrefresh">
+	<div class="mui-scroll itemlist">
+	  <!--<div class="section">
+	    <div class="title">
+	      <div class="avatar"><img src="img/avatar.png"></div>
+	      <div class="name">嗨，你节操掉了！</div>
+	    </div>
+	    <div class="article">
+	      <p>上次因为用火机看油箱被教练施暴后，经网友支持果断换了驾校，今天练车，刚好是下坡，好紧张不知道该干嘛，猛踩油门，教练大喊：“刹车！用脚刹！”我连忙打开车门，一只脚放在地上，拖行了20多米，终于停下来了！教练吓傻了，让我去给他买包中华压惊！当时我就郁闷，怎么还有拿牙膏压惊的！当我把中华牙膏递给他时，他默默的退还了全部学费，说：隔壁还有一家驾校…麻的，拿个驾照那么难吗？</p>
+	    </div>
+	    <div class="comment">
+	      <span><em><b class="flower"></b>15780</em></span>
+	      <span><em class="active"><b class="eggs"></b> 1890</em></span>
+	      <span><em><b class="fa fa-star-o"></b>18</em></span>
+	      <span><em><b class="fa fa-share-square-o"></b>18</em></span>
+	      <span><em><b class="fa fa-comment-o"></b>18</em></span>
+	    </div>
+	  </div>-->
+  </div>
+</div>
+
+<div id="share" class="share" style="display:none;">
+  <div class="count"><span>10</span>人分享</div>
+  <h3>分享给好友</h3>
+  <div class="share-list">
+    <article><a href="#"><img src="images/qq_friends.png"></a><span>QQ好友</span></article>
+    <article><a href="#"><img src="images/webchat.png"></a><span>微信好友</span></article>
+    <article><a href="#"><img src="images/chat_friends.png"></a><span>微信朋友圈</span></article>
+    <article><a href="#"><img src="images/sina.png"></a><span>新浪微博</span></article>
+  </div>
+  <div class="closed" id="cancelshare">取消</div>
+</div>
+
+<script src="../js/mui.min.js"></script>
+<script src="../js/common/basepage.js"></script>
+<script type="text/javascript" charset="utf-8">
+setTimeout(function() {
+  mui.init({
+    swipeBack: false,
+    pullRefresh: {
+      container: '#pullrefresh',
+      down: {
+          contentdown : "下拉可以刷新",//可选，在下拉可刷新状态时，下拉刷新控件上显示的标题内容
+          contentover : "释放立即刷新",//可选，在释放可刷新状态时，下拉刷新控件上显示的标题内容
+          contentrefresh : "正在刷新...",//可选，正在刷新状态时，下拉刷新控件上显示的标题内容
+          callback: dataArr.pulldownRefresh
+      },
+      up: {
+	      contentrefresh : "正在加载...",//可选，正在加载状态时，上拉加载控件上显示的标题内容
+	      contentnomore:'没有更多数据了',//可选，请求完毕若没有更多数据时显示的提醒内容；
+          callback: dataArr.pullupRefresh
+      }
+    }
+  });
+},300);
+  	
+var dataArr={
+  count:0,
+  categoryId:1,
+  page:1,
+  page_size:20,
+  pullupRefresh:function(){
+  	//上拉加载具体业务实现
+      setTimeout(function() {
+	      	databasepage.getData(databasepage.getmyurl_token()+'&categoryId='+dataArr.categoryId+'&page=' + (dataArr.page++),function(data){
+		      data=data.data;
+      		  var currcount=(dataArr.page-2)*dataArr.page_size+data.data_list.length;
+		      mui('#pullrefresh').pullRefresh().endPullupToRefresh(currcount>=data.total_count); //参数为true代表没有更多数据了。
+		      dataArr.getData(data,"up");
+		    })
+	  },1000);
+  },
+  pulldownRefresh:function(){
+  	//下拉刷新具体业务实现
+	  dataArr.page=1;
+	  setTimeout(function() {
+	    databasepage.getData(databasepage.getmyurl_token()+'&categoryId='+dataArr.categoryId+'&page=' + dataArr.page,function(data){
+	      data=data.data;
+	      if(data.data_list.length >1){
+	        document.body.querySelector('.itemlist').innerHTML='';
+	      }
+	      dataArr.getData(data,"down");
+	      mui('#pullrefresh').pullRefresh().endPulldownToRefresh(); //refresh completed
+	    })
+	  },1000);
+  },
+  getData:function(data,upordown){
+    var table = document.body.querySelector('.itemlist');
+    var len = data.data_list.length;
+    dataArr.count=len;
+    for(var index = 0; index < len;index++){
+      var d = data.data_list[index];
+      var div = document.createElement('div');
+      div.id=d.article_id+'_'+d.category_id;
+      div.className = 'section';
+      div.innerHTML = '<a class="title" href="javascript:dataArr.goDetail('+d.article_id+','+d.category_id+')">'+
+              '<div class="avatar"><img src="'+(d.face_img!=null?d.face_img:'../images/avatar.jpg')+'"></div>'+
+              '<div class="name">'+(d.author!=null?d.author:'我')+'</div>'+
+            '</a>'+
+            '<a class="article" href="javascript:dataArr.goDetail('+d.article_id+','+d.category_id+')">'+
+            d.article_content+
+            '</a>';
+          if(upordown=='up')
+        table.appendChild(div)//上拉加载，追加在后面
+      else{
+        table.insertBefore(div, table.firstChild);//下拉刷新，新纪录插到最前面；
+      }
+        
+    }
+  },
+  goDetail:function(articleId,articleCategoryId){
+	databasepage.openWin2('article.html','article',{articleId:articleId,categoryId:articleCategoryId});
+  },
+};
+
+
+if (mui.os.plus) {
+  mui.plusReady(function() {
+    setTimeout(function() {
+      mui('#pullrefresh').pullRefresh().pullupLoading();
+    }, 400);
+  });
+} else {
+  mui.ready(function() {
+    mui('#pullrefresh').pullRefresh().pullupLoading();
+  });
+}
+</script>
+</body>
+</html>

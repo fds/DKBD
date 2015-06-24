@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title></title>
+<link href="css/mui.min.css" rel="stylesheet"/>
+<link href="css/font-awesome.min.css" rel="stylesheet" />
+<link href="css/style.css" rel="stylesheet" />
+<script src="js/mui.min.js"></script>
+<script src="js/common/basepage.js"></script>
+<style>
+ul li{ list-style: none;}
+.mui-table-view{ background: none;}
+.mui-slider-indicator{ bottom: 0;}
+.mui-bar{ padding: 0;}
+.mui-bar .title{ padding: 0 10px; background: #F60;}
+.mui-bar .title a{ color: #FFF;}
+.mui-bar .title h1{ font-size: 24px; color: #FFF;}
+.mui-bar .mui-segmented-control{ top: 0; height: 40px;}
+.mui-segmented-control{ border: none;}
+.mui-segmented-control .mui-control-item{ padding: 0; line-height: 40px; border: none;}
+.mui-segmented-control .mui-control-item.mui-active{ background: none;}
+.mui-segmented-control .mui-control-item.mui-active span{ padding: 5px 10px; background: #F60; border-radius: 20px;}
+.mui-popover{}
+.mui-table-view:after,.mui-table-view:before { background: none;}
+</style>
+
+<body>
+	
+<header class="mui-bar mui-bar-nav">
+  <div class="title">
+<!--    <a class="mui-icon mui-pull-right refresh" href="#"><b class="fa fa-ellipsis-v"></b></a>-->
+    <h1 class="mui-title">蹲坑宝典</h1>
+    <a class="mui-icon mui-pull-left publish" href="javascript:dataArr.goPublish();"><b class="fa fa-edit"></b></a>
+  </div>
+  <div class="top-nav">
+  	<div id="menu-li" class="channel-list">
+  	</div>
+  	<div class="custom-channel" id="customChannel">
+  		<a href="#" ><span class="fa fa-angle-down"></span></a>
+  	</div>
+  </div>
+</header>
+
+<div class="mui-content mui-scroll-wrapper" id="pullrefresh" style="padding-top:89px;">
+	<div class="mui-scroll">
+		<ul class="section-box mui-table-view mui-table-view-chevron">
+			
+		</ul>
+	</div>
+</div>
+
+<div class="more-channel" id='morecategory' style="display: none;">
+	<div class="add-channel-tips" id="addChannelTips" style="display: none;">最多添加4个频道，请先删除一些</div>
+	<div class="channel-list" id="selectedList">
+    </div>
+</div>
+
+<div id="share" class="share" data-reid='' style="display: none;">
+  <!--<div class="count"><span>0</span>人分享</div>-->
+  <h3>分享给好友</h3>
+  <div class="share-list">
+    <article><a href="javascript:dataArr.share('tencentweibo')"><img src="images/qq_friends.png"></a><span>腾讯微博</span></article>
+    <article><a href="javascript:dataArr.share('weixin','WXSceneSession')"><img src="images/webchat.png"></a><span>微信好友</span></article>
+    <article><a href="javascript:dataArr.share('weixin','WXSceneTimeline')"><img src="images/chat_friends.png"></a><span>微信朋友圈</span></article>
+    <article><a href="javascript:dataArr.share('sinaweibo')"><img src="images/sina.png"></a><span>新浪微博</span></article>
+  </div>
+  <div class="closed" id="cancelshare">取消</div>
+</div>
+
+<script type="text/javascript">
+    setTimeout(function () {
+        mui.init({
+            swipeBack: false,
+            pullRefresh: {
+                container: '#pullrefresh',
+                down: {
+                    contentdown: "下拉可以刷新",//可选，在下拉可刷新状态时，下拉刷新控件上显示的标题内容
+                    contentover: "释放立即刷新",//可选，在释放可刷新状态时，下拉刷新控件上显示的标题内容
+                    contentrefresh: "正在刷新...",//可选，正在刷新状态时，下拉刷新控件上显示的标题内容
+                    callback: dataArr.pulldownRefresh
+                },
+                up: {
+                    contentrefresh: "正在加载...",//可选，正在加载状态时，上拉加载控件上显示的标题内容
+                    contentnomore: '没有更多数据了',//可选，请求完毕若没有更多数据时显示的提醒内容；
+                    callback: dataArr.pullupRefresh
+                }
+            }
+        });
+    },300);
+
+    var dataArr = {
+        count: 0,
+        categoryId: 1,
+        page: 1,
+        page_size: 20,
+        ispost: true,
+        pullupRefresh: function () {
+            //上拉加载具体业务实现
+            setTimeout(function () {
+                databasepage.getData(databasepage.geturl() + '&categoryId=' + dataArr.categoryId + '&page=' + (dataArr.page++), function (data) {
+                    var currcount = (dataArr.page - 2) * dataArr.page_size + data.data.data_list.length;
+                    mui('#pullrefresh').pullRefresh().endPullupToRefresh(currcount >= data.data.total_count); //参数为true代表没有更多数据了。
+                    dataArr.getData(data.data.data_list, "up");
+                    databasepage.loadArticleNetWork(data.data.data_list, dataArr.categoryId)//缓存数据
+                })
+            }, 1000);
+        },
+        pulldownRefresh: function () {
+            //下拉刷新具体业务实现
+            dataArr.page = 1;
+            setTimeout(function () {
+                databasepage.getData(databasepage.geturl() + '&categoryId=' + dataArr.categoryId + '&page=' + dataArr.page, function (data) {
+                    if (data.data.data_list.length > 1) {
+                        document.body.querySelector('.mui-table-view').innerHTML = '';
+                    }
+                    dataArr.getData(data.data.data_list, "down");
+                    mui('#pullrefresh').pullRefresh().endPulldownToRefresh(); //refresh completed
+                    databasepage.loadArticleNetWork(data.data.data_list, dataArr.categoryId)//缓存数据
+                })
+            }, 600);
+        },
+        getData: function (data, upordown) {
+            var table = document.body.querySelector('.mui-table-view');
+            var len = data.length;
+            dataArr.count = len;
+            for (var index = len-1; index >=0; index--) {
+                var d = data[index];
+                var li = document.createElement('li');
+                li.id = d.article_id + '_' + d.category_id;
+                li.className = 'section';
+                li.innerHTML = '<a class="title" href="javascript:dataArr.goDetail(' + d.article_id + ',' + d.category_id + ')">' +
+                        '<div class="avatar"><img src="' + (d.face_img != null ? d.face_img : 'images/avatar.jpg') + '"></div>' +
+                        '<div class="name">' + (d.author != null ? d.author : '他很懒，名字都不留') + '</div>' +
+                      '</a>' +
+                      '<a class="article" href="javascript:dataArr.goDetail(' + d.article_id + ',' + d.category_id + ')">' +
+                      d.article_content +
+                      '</a>' +
+                      '<div class="comment">' +
+                        '<a href="javascript:dataArr.setCount(' + d.article_id + ',' + d.category_id + ',2)" ><span><b class="flower"></b>' + d.flower_count + '</span></a>' +
+                        '<a href="javascript:dataArr.setCount(' + d.article_id + ',' + d.category_id + ',3)"><span><b class="eggs"></b>' + d.egg_count + '</span></a>' +
+                          '<a href="javascript:dataArr.collect(' + d.article_id + ',' + d.category_id + ')"><span><b class="fa fa-star-o collect"></b>' + d.collect_count + '</span></a>' +
+                          '<a href="javascript:dataArr.openShare(' + d.article_id + ',' + d.category_id + ')"><span><b class="fa fa-share-square-o warns"></b>' + 0+ '</span></a>' +
+                          '<a href="javascript:dataArr.goDetail(' + d.article_id + ',' + d.category_id + ')"><span><b class="fa fa-comment-o"></b>' + d.comment_count + '</span></a>' +
+                        '</div>';
+                if (upordown == 'up')
+                    table.appendChild(li)//上拉加载，追加在后面
+                else {
+                    table.insertBefore(li, table.firstChild);//下拉刷新，新纪录插到最前面；
+                }
+
+            }
+        },
+        setCount: function (articleId, articleCategoryId, type) {
+            if (databasepage.getItem("DKBD_USER") == null) {
+                databasepage.openWin2('app/login.html', 'login', { preload: true })
+                return;
+            }
+
+            if (!dataArr.ispost)
+                return;
+
+            var ele = document.getElementById(articleId + '_' + articleCategoryId)
+            var elsename = ''
+            var clsname = ''
+            if (type == 2) {
+                elsename = ".flower";
+                clsname = '<b class="flower"></b>';
+            }
+            else if (type == 3) {
+                elsename = ".eggs";
+                clsname = '<b class="eggs" ></b>';
+            }
+            var fw = ele.querySelector(elsename).parentElement;
+            if (fw.parentElement.className.indexOf("mui-active") > -1) {
+                return;
+            }
+
+            dataArr.ispost = false;
+            var wt = plus.nativeUI.showWaiting();
+            mui.ajax(databasepage.setcounturl_token(), {
+                data: {
+                    articleId: articleId,
+                    articleCategoryId: articleCategoryId,
+                    type: type
+                },
+                dataType: 'json',//服务器返回json格式数据
+                type: 'post',//HTTP请求类型
+                timeout: 5000,//超时时间设置为10秒；
+                success: function (data) {
+                    wt.close();
+                    if (data.code == 0) {
+                        fw.innerHTML = clsname + (parseInt(fw.innerText) + 1);
+                        fw.parentElement.className = "mui-active"
+                    }
+                    else {
+                        databasepage.alert(data.message)
+                    }
+                    dataArr.ispost = true
+                },
+                error: function (xhr, type, errorThrown) {
+                    wt.close();
+                    databasepage.alert('网络不给力哦~')
+                    dataArr.ispost = true
+                }
+            });
+        },
+        goDetail: function (articleId, articleCategoryId) {
+            databasepage.openWin2('app/article.html', 'article', { articleId: articleId, categoryId: articleCategoryId });
+        },
+        collect: function (articleId, categoryId) {
+            if (databasepage.getItem("DKBD_USER") == null) {
+                databasepage.openWin2('app/login.html', 'login', { preload: true })
+                return;
+            }
+
+            if (!dataArr.ispost)
+                return;
+            var ele = document.getElementById(articleId + '_' + categoryId)
+            var fw = ele.querySelector('.collect').parentElement;
+            if (fw.parentElement.className.indexOf("mui-active") > -1) {
+                return;
+            }
+            dataArr.ispost = false;
+            var wt = plus.nativeUI.showWaiting();
+            mui.ajax(databasepage.setcollectarticleurl_token(), {
+                data: {
+                    articleId: articleId,
+                    categoryId: categoryId
+                },
+                dataType: 'json',//服务器返回json格式数据
+                type: 'post',//HTTP请求类型
+                timeout: 5000,//超时时间设置为10秒；
+                success: function (data) {
+                    wt.close();
+                    if (data.code == 0) {
+                        fw.innerHTML = '<b class="fa fa-star-o collect"></b>' + (parseInt(fw.innerText) + 1);
+                        fw.parentElement.className = "mui-active"
+                    }
+                    else {
+                        databasepage.alert(data.message)
+                    }
+                    dataArr.ispost = true
+                },
+                error: function (xhr, type, errorThrown) {
+                    wt.close();
+                    databasepage.alert('网络不给力哦~')
+                    dataArr.ispost = true
+                }
+            });
+        },
+        goPublish: function () {
+            var login = databasepage.getItem("DKBD_USER")
+            if (login == null)
+                databasepage.openWin2('app/login.html', 'login', { preload: true })
+            else
+                databasepage.openWin('publish', 'app/publish.html');
+        },
+        openShare: function (articleId, articleCategoryId) {
+            document.getElementById("share").setAttribute('data-reid', articleId + '_' + articleCategoryId);
+            document.getElementById("share").style.display = 'block';
+            mask.show();//显示遮罩
+        },
+        closeShare: function () {
+            document.getElementById("share").style.display = 'none';
+            mask.close();//关闭遮罩
+        },
+        share: function (id, ex) {
+            dataArr.closeShare();
+            var parid = document.getElementById("share").getAttribute('data-reid');
+            databasepage.shareAction(id, ex, parid);//分享接口
+        },
+        loadPB: function () {
+            databasepage.loadCategoryByPageDB(dataArr.categoryId, 1, function (data) {
+                mui('#pullrefresh').pullRefresh().refresh(true);
+//                	        	alert(JSON.stringify(data))
+                if (data != undefined && data != null) {//获取离线数据
+                    dataArr.page = 2;
+                    dataArr.getData(data, "up");
+                }
+                else {//不存在数据重新加载
+                    mui('#pullrefresh').pullRefresh().pullupLoading();
+                }
+            }, function () {
+                databasepage.alert('网络不给力');
+            })
+        },
+        initCategory: function () {
+            var clist = databasepage.getCategoryList();//所有
+            var sedul = document.getElementById('menu-li'); //已选择dom
+            var noul = document.getElementById('selectedList');//未选择的dom
+
+            var sed = [];
+            var cache = databasepage.getItem(databasepage.SELECT_CATEGORY);//获取已选择的缓存
+            //如果没有缓存
+            if (cache == null || cache.length < 1) {
+                sed.push(clist.shift())
+                sed.push(clist.shift())
+                sed.push(clist.shift())
+                sed.push(clist.shift())
+            }
+            else {
+                sed = cache;
+                for (var i = 0 ; i < clist.length ; i++) {
+                    for (var j = 0 ; j < sed.length ; j++) {
+                        if (clist[i].category_id === sed[j].category_id) {
+                            sed[j].category_name = clist[i].category_name;//同步最新的类别名称
+                            clist.splice(i, 1); //利用splice函数删除元素，从第i个位置，截取长度为1的元素
+                        }
+                    }
+                }
+            }
+
+//            alert(JSON.stringify(clist));
+//            alert(JSON.stringify(sed));
+
+            //初始化已选择dom
+            for (var j = 0; j < sed.length; j++) {
+                var li = document.createElement('a');
+                li.innerHTML = '<span data-relid="' + sed[j].category_id + '">' + sed[j].category_name + '</span>';
+                if (j == 0) {
+                    li.className = 'mui-active';
+                }
+                sedul.appendChild(li);//已选择
+            }
+            dataArr.categoryId = sed[0].category_id;//初始化赋值
+
+
+            //初始化未选择dom
+            for (var i = 0; i < clist.length; i++) {
+                var li = document.createElement('a');
+                li.innerHTML = '<span data-relid="' + clist[i].category_id + '">' + clist[i].category_name + '</span>';
+                noul.appendChild(li); //未选择
+            }
+
+
+        }
+    };
+
+    mui.plusReady(function () {
+        dataArr.initCategory();//初始化类别
+
+        setTimeout(function () {
+      	    databasepage.init()//初始化数据库
+      	    dataArr.loadPB();//获取离线数据
+      	    databasepage.updateSerivces(); //更新分享插件
+        }, 1000);
+    });
+    
+    var mask =null;
+    (function ($) {	
+        mask = mui.createMask(function () {
+            document.getElementById("share").style.display = 'none';
+            mask.close();//关闭遮罩
+        });
+        
+        mui('.channel-list').on('tap', 'a', function () {
+        	var seleted = document.getElementById('menu-li');
+        	var selectedList = document.getElementById('selectedList');
+        	var addChannelTips = document.getElementById('addChannelTips');
+        	if(this.parentElement.getAttribute('id') == 'selectedList'){
+        		if(seleted.querySelectorAll('a').length < 4){
+	        		var li = document.createElement('a');
+	        		li.innerHTML = this.innerHTML;
+	        		seleted.appendChild(li); 
+	        		this.outerHTML='';
+        		}else{
+        			addChannelTips.style.display = 'block';
+        		}
+        	}else{
+        		if(document.getElementById('morecategory').style.display=='none'){
+        			
+        			var ele = document.querySelectorAll('#menu-li a');
+        			for(var i=0;i<ele.length;i++){
+        				ele[i].className='';
+        			}
+		            this.className = "mui-active";
+		            
+		            var relid = this.querySelector('span').getAttribute('data-relid');
+        			//动态切换类别数据
+		            dataArr.page = 1;
+		            dataArr.categoryId = relid;
+		            document.body.querySelector('.mui-table-view').innerHTML = '';
+					dataArr.loadPB();//获取数据
+        		} else {
+        		    if (seleted.querySelectorAll('a').length < 2) {
+        		        databasepage.alert('至少保留一个类');
+        		        return;
+        		    }
+        			var li = document.createElement('a');
+		        	li.innerHTML = this.innerHTML;
+		        	selectedList.appendChild(li);
+		        	this.outerHTML='';
+		        	addChannelTips.style.display = 'none';
+        		}
+        	}
+        });
+        
+        document.getElementById("customChannel").addEventListener('tap', function () {
+            var sty = document.getElementById('morecategory').style.display;
+            if (sty == 'block') {
+                //关闭更多时保存已选择的类别
+                var ctlist = []
+                var ele = document.querySelectorAll('#menu-li a span');
+                for (var i = 0; i < ele.length; i++) {
+                    ctlist.push({
+                        category_id: parseInt(ele[i].getAttribute('data-relid')),
+                        category_name: ele[i].innerText
+                    })
+                }
+                databasepage.setItem(databasepage.SELECT_CATEGORY, ctlist);
+
+                document.getElementById('morecategory').style.display = 'none';
+            }
+            else {
+                document.getElementById('morecategory').style.display = 'block';
+            }
+        })
+        document.getElementById("cancelshare").addEventListener('tap', function () {
+            dataArr.closeShare()
+        });
+        
+    })(mui);
+</script>
+</body>
+</html>

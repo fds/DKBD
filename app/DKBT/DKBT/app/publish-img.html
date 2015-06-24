@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>蹲坑宝典</title>
+<link href="../css/mui.min.css" rel="stylesheet"/>
+<link href="../css/font-awesome.min.css" rel="stylesheet" />
+<link href="../css/style.css" rel="stylesheet" />
+<script src="../js/mui.min.js"></script>
+<script src="../js/common/basepage.js"></script>
+<script src="../js/common/string.js"></script>
+<style>
+.img-list ul{ overflow: hidden; padding:0 10px;}
+.img-list li{ float:left; width:60px; height:60px; border: 1px solid #DDD; margin-right:10px; margin-bottom:10px; overflow: hidden;}
+.img-list li:nth-child(4n){ margin-right: 0;}
+.img-list li:last-child{ line-height: 60px; background: #FFF; font-size: 40px; color:#DDD; text-align: center;}
+.img-list li img{ width: 100%;}
+</style>
+</head>
+
+<body>
+<header class="mui-bar mui-bar-nav">
+  <div class="title">
+  	<a href="#" class="mui-btn mui-btn-link mui-btn-nav mui-pull-left mui-action-back"><span class="mui-icon mui-icon-back"></span>返回</a>
+  	<h1 class="mui-title">帖子投稿</h1>
+  	<a href="javascript:pushlishTool.saveData()" class="mui-btn mui-btn-link mui-btn-nav mui-pull-right">发表</a>
+  </div>
+</header>
+<div class="mui-content">
+  <div class="mui-input-row" style="margin: 10px 5px;">
+	<textarea rows="8" placeholder="请勿发布色情、淫秽、政治等违反国家法律的内容" id='content'></textarea>
+  </div>
+  <div class="img-list">
+  	<ul id='imagelist'>
+  	  <!--<li><img class="mui-media-object" src="../images/01-01.jpg"></li>
+  	  <li><img class="mui-media-object" src="../images/01-01.jpg"></li>
+  	  <li><img class="mui-media-object" src="../images/01-01.jpg"></li>-->
+  	  <li><a href="javascript:pushlishTool.addImg()">+</a></li>
+  	</ul>
+  </div>
+</div>
+<div class="mui-bar mui-bar-tab" style="display:none;" id='pictool'>
+  <a class="mui-tab-item" href="javascript:pushlishTool.getImage();">
+	<span class="mui-icon mui-icon-camera"></span>
+	<span class="mui-tab-label">拍照</span>
+  </a>
+  <a class="mui-tab-item" href="javascript:pushlishTool.getgallery();">
+	<span class="mui-icon mui-icon-image"></span>
+	<span class="mui-tab-label">已有的</span>
+  </a>
+</div>
+<script type="text/javascript" charset="utf-8">
+mui.init();
+
+var pushlishTool = {
+    ispost: true,
+    files: [],
+    appendFile: function (path) {
+        var img = new Image();
+        img.src = path;        // 传过来的图片路径在这里用。
+        img.onload = function () {
+            var that = this;
+            //生成比例 
+            var w = that.width,
+                h = that.height,
+                scale = w / h;
+            w = 480 || w;              //480  你想压缩到多大，改这里
+            h = w / scale;
+            //生成canvas
+            var canvas = document.createElement('canvas');
+            var ctx = canvas.getContext('2d');
+ 			// 重置canvas宽高  
+            canvas.width = w;  
+            canvas.height = h; 
+            ctx.drawImage(that, 0, 0, w, h);
+            var base64 = canvas.toDataURL('image/jpeg', 1 || 0.8);   //1最清晰，越低越模糊。有一点不清楚这里明明设置的是jpeg。弹出 base64 开头的一段 data：image/png;却是png。哎开心就好，开心就好
+            canvas=null;
+            //                          alert(base64);
+           
+            var li = document.createElement('li');
+            var id = pushlishTool.getUid().toString();
+            var src = base64;                    //这里丢到img 的 src 里面就能看到效果了
+            li.id = id;
+            li.innerHTML = '<a href="javascript:pushlishTool.deleteImg(&quot;' + id + '&quot;)"><img class="mui-media-object" src="' + base64 + '"></a>';
+            var table = document.getElementById('imagelist')
+            table.insertBefore(li, table.firstChild);
+
+            pushlishTool.files.push({ name: "file" + id, pic: base64 });   // 把base64数据丢进数组，上传要用。
+        }
+
+    },
+    getUid: function () {
+        return Math.floor(Math.random() * 100000000 + 10000000).toString();
+    },
+    getImage: function () {
+        document.getElementById('pictool').style.display = 'none';
+        plus.camera.getCamera().captureImage(function (p) {
+            pushlishTool.appendFile(plus.io.convertLocalFileSystemURL(p));
+        }, function (e) {
+        }, { filename: "_doc/camera/", index: i });
+    },
+    getgallery: function () {
+        document.getElementById('pictool').style.display = 'none';
+        plus.gallery.pick(function (path) {
+            pushlishTool.appendFile(path);
+        }, function (e) {
+        });
+    },
+    deleteImg: function (id) {
+        document.getElementById(id).remove();
+        var len = pushlishTool.files.length;
+        for (var i = 0; i < len; i++) {
+            if (pushlishTool.files[i].name == 'file' + id)
+                pushlishTool.files.splice(i, 1);
+        }
+    },
+    addImg: function () {
+        document.getElementById('pictool').style.display = 'block';
+    },
+    saveData: function () {
+        if (pushlishTool.ispost) {
+            var content = document.getElementById('content').value.trim();
+        	for (var i=0;i<pushlishTool.files.length;i++) {
+        		content+='<img src="'+pushlishTool.files[i].pic+'"/><br/>';
+        	}
+            if (content.length < 1) {
+                databasepage.alert("请填写内容~");
+                return;
+            }
+            pushlishTool.ispost = false;
+            var wt = plus.nativeUI.showWaiting();
+            var self = plus.webview.currentWebview();
+            
+            mui.ajax(databasepage.publishurl_token(), {
+                data: {
+                    categoryId: self.categoryId,
+                    content: encodeURIComponent(content),
+                    title: '~'
+                },
+                dataType: 'json',//服务器返回json格式数据
+                type: 'post',//HTTP请求类型
+                timeout: 8000,//超时时间设置为5秒；
+                success: function (data) {
+                    wt.close();
+                    if (data.code == 0) {
+                        plus.webview.getWebviewById('publish').hide()
+                        self.close();
+                        databasepage.alert('发帖成功')
+                    }
+                    else {
+                        databasepage.alert(data.message)
+                    }
+                    pushlishTool.ispost = true
+                },
+                error: function (xhr, type, errorThrown) {
+                    wt.close();
+                    databasepage.alert('网络不给力哦~')
+                    pushlishTool.ispost = true
+                }
+            });
+
+        }
+    }
+};
+
+var i=1,gentry=null;
+function plusReady() {
+    // 获取摄像头目录对象
+    plus.io.resolveLocalFileSystemURL("_doc/", function (entry) {
+        entry.getDirectory("camera", { create: true }, function (dir) {
+            gentry = dir;
+        }, function (e) {
+            databasepage.alert("Get directory \"camera\" failed: " + e.message);
+        });
+    }, function (e) {
+        databasepage.alert("Resolve \"_doc/\" failed: " + e.message);
+    });
+};
+
+if (window.plus) {
+    plusReady();
+} else {
+    document.addEventListener("plusready", plusReady, false);
+};
+
+(function($) {
+	document.getElementById('content').value='';
+})(mui);
+
+</script>
+</body>
+</html>

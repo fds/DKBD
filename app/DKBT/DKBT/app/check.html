@@ -1,0 +1,138 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+<title>蹲坑宝典</title>
+<link href="../css/mui.min.css" rel="stylesheet"/>
+<link href="../css/style.css" rel="stylesheet"/>
+<link href="../css/font-awesome.min.css" rel="stylesheet"/>
+<script src="../js/mui.min.js"></script>
+<script src="../js/common/basepage.js"></script>
+<style>
+.mui-bar-tab .mui-tab-item .mui-icon{ display: inline;}
+.mui-bar-tab .mui-tab-item .flower{ display: inline-block; width:20px; height:20px;  background:url(../images/icon_sprites.png) no-repeat 0 0;}
+.mui-bar-tab .mui-tab-item .eggs{ display: inline-block; width:20px; height:20px; background:url(../images/icon_sprites.png) no-repeat 0 -42px;}
+</style>
+</head>
+
+<body>
+<header class="mui-bar mui-bar-nav">
+	<a href="#" class="mui-btn mui-btn-link mui-btn-nav mui-pull-left mui-action-back"><span class="mui-icon mui-icon-back"></span>审核新帖</a>
+</header>
+<div class="mui-content" style="padding-bottom: 50px;">
+	<div class="section">
+    	<div class="article">
+    		<p id="article"></p>
+    	</div>
+  	</div>
+</div>
+<div class="bottom-nav mui-bar mui-bar-tab" id="mui-bottom">
+	<a class="mui-tab-item" href="javascript:dataArr.next()" id='next_step'>
+		<span class="mui-icon"></span>
+		<span>跳过</span>
+	</a>
+	<a class="mui-tab-item" href="#" id="flower">
+		<span class="mui-icon flower"></span>
+		<span>鲜花</span>
+	</a>
+	<a class="mui-tab-item" href="#" id="eggs">
+		<span class="mui-icon eggs"></span>
+		<span>鸡蛋</span>
+	</a>
+	<a class="mui-tab-item" href="#" id="warns">
+		<span class="mui-icon"></span>
+		<span>举报</span>
+	</a>
+</div>
+<script type="text/javascript" charset="utf-8">
+mui.init();
+
+var dataArr = {
+    page: 1,
+    categoryList:null,//获取到的类别列表
+    categoryId: 1,
+    ispost: true,
+    setCount: function (articleId, articleCategoryId, type) {
+        if (!dataArr.ispost) {
+            return;
+        }
+        var wt = plus.nativeUI.showWaiting();
+        dataArr.ispost = false;
+
+        mui.ajax(databasepage.setcounturl_token(), {
+            data: {
+                articleId: articleId,
+                articleCategoryId: articleCategoryId,
+                type: type
+            },
+            dataType: 'json',//服务器返回json格式数据
+            type: 'post',//HTTP请求类型
+            timeout: 5000,//超时时间设置为10秒；
+            success: function (data) {
+            	wt.close();
+                if (data.code == 0) {
+                    dataArr.next();
+                }
+                else {
+                    databasepage.alert(data.message)
+                }
+                dataArr.ispost = true;
+            },
+            error: function (xhr, type, errorThrown) {
+            	wt.close();
+                databasepage.alert('网络不给力哦~')
+                dataArr.ispost = true
+            }
+        });
+
+    },
+    goback: function () {
+        plus.webview.currentWebview().close();
+    },
+    next: function () {
+        var wt = plus.nativeUI.showWaiting();
+        databasepage.getData(databasepage.getnoverifyurl_token() + '&pageSize=1&categoryId=' + dataArr.categoryId + '&page=' + (dataArr.page++), function (data) {
+            data = data.data;
+            if (data.data_list.length == 1) {
+                data = data.data_list[0];
+                document.getElementById("article").innerHTML = data.article_content;
+
+                document.getElementById("next_step").className = 'mui-tab-item';
+
+                document.getElementById("flower").className = 'mui-tab-item';
+                document.getElementById("flower").href = 'javascript:dataArr.setCount(' + data.article_id + ',' + data.category_id + ',2)'
+
+                document.getElementById("eggs").className = 'mui-tab-item';
+                document.getElementById("eggs").href = 'javascript:dataArr.setCount(' + data.article_id + ',' + data.category_id + ',3)'
+
+                document.getElementById("warns").className = 'mui-tab-item';
+                document.getElementById("warns").href = 'javascript:dataArr.setCount(' + data.article_id + ',' + data.category_id + ',6)'
+            }
+            else {
+                if (dataArr.categoryList.length > 0) {
+                    var category = dataArr.categoryList.shift();//继续获取类别
+                    dataArr.categoryId = category.category_id;
+                }
+                else {
+                    databasepage.alert("没有了~")
+                }
+            }
+             wt.close();
+        })
+    }
+};
+
+mui.plusReady(function () {
+    setTimeout(function () {
+        ////获取缓存到的类别数据
+        dataArr.categoryList = databasepage.getCategoryList();
+        var category = dataArr.categoryList.shift();//取出第一个类别
+        dataArr.categoryId = category.category_id;
+
+        dataArr.next();
+    }, 1000);
+});
+</script>
+</body>
+</html>

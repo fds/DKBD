@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+<title>蹲坑宝典</title>
+<link href="../css/mui.min.css" rel="stylesheet"/>
+<link href="../css/style.css" rel="stylesheet"/>
+<link href="../css/font-awesome.min.css" rel="stylesheet"/>
+<style>
+.mui-bar .title a{ color: #666;}
+.mui-bar .title a span{ font-size: 22px;}
+</style>
+</head>
+
+<body>
+<header class="mui-bar mui-bar-nav">
+  <div class="title">
+  	<a href="#" class="mui-btn mui-btn-link mui-btn-nav mui-pull-left mui-action-back"><span class="mui-icon mui-icon-back"></span>返回</a>
+  	<h1 class="mui-title">意见反馈</h1>
+  	<a href="#" class="mui-btn mui-btn-link mui-btn-nav mui-pull-right"></a>
+  </div>
+</header>
+<div class="mui-content" style=" padding-top:50px;">
+  <div class="feedback">
+    <h3>您的想法和建议：</h3>
+    <textarea id="contet"></textarea>
+    <h3>联系方式（QQ或者邮箱）：</h3>
+	<input type="text" placeholder="请留下您的QQ或者邮箱" id="contact">
+    <a class="submit" href="javascript:dataArr.saveData()">发送反馈</a>
+  </div>
+</div>
+<script src="../js/mui.min.js"></script>
+<script src="../js/common/basepage.js"></script>
+<script src="../js/common/string.js"></script>
+<script type="text/javascript" charset="utf-8">
+  	mui.init();
+  	var dataArr={
+  		ispost:true,
+  		saveData:function(){
+  			var content=document.getElementById('contet').value.trim();
+  			var contact=document.getElementById('contact').value.trim();
+  			if(content.length<1||contact.length<1){
+  				databasepage.alert('请填写完整信息')
+  				return;
+  			}
+  			plus.webview.currentWebview().close();
+  			databasepage.alert('谢谢您的反馈')
+  		}
+  	}
+</script>
+</body>
+</html>

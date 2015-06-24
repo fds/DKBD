@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+<title>蹲坑宝典</title>
+<link href="../css/mui.min.css" rel="stylesheet"/>
+<link href="../css/style.css" rel="stylesheet"/>
+<link href="../css/font-awesome.min.css" rel="stylesheet"/>
+<script src="../js/mui.min.js"></script>
+<script src="../js/common/basepage.js"></script>
+<script src="../js/common/string.js"></script>
+<style>
+html,body { background-color: #EFEFEF;}
+.mui-bar .mui-title{ right:80px; left:80px;}
+</style>
+</head>
+
+<body>
+<header class="mui-bar mui-bar-nav">
+  <div class="title">
+  	<a href="#" class="mui-btn mui-btn-link mui-btn-nav mui-pull-left mui-action-back"><span class="mui-icon mui-icon-back"></span>返回</a>
+  	<h1 class="mui-title">发表评论</h1>
+  	<a href="javascript:dataArr.publish()" class="mui-btn mui-btn-link mui-btn-nav mui-pull-right">完成</a>
+  </div>
+</header>
+<div class="mui-content comment-page">
+  <div class="editor-box">
+    <textarea placeholder="请勿发布色情、淫秽、政治等违反国家法律的内容" id='content'></textarea>
+  </div>
+</div>
+
+<script type="text/javascript" charset="utf-8">
+mui.init();
+  	
+var dataArr={
+	ispost:true,
+	publish: function () {
+	    if (dataArr.ispost) {
+	        var content = document.getElementById('content').value.trim();
+	        if (content.length < 1) {
+	            databasepage.alert("请填写内容~");
+	            return;
+	        }
+	        dataArr.ispost = false;
+	        var wt = plus.nativeUI.showWaiting();
+	        var self = plus.webview.currentWebview();
+	        mui.ajax(databasepage.publishcommenturl_token(), {
+	            data: {
+	                articleId: self.articleId,
+	                articleCategoryId: self.categoryId,
+	                content: encodeURIComponent(content)
+	            },
+	            dataType: 'json',//服务器返回json格式数据
+	            type: 'post',//HTTP请求类型
+	            timeout: 5000,//超时时间设置为10秒；
+	            success: function (data) {
+	                wt.close();
+	                if (data.code == 0) {
+	                    plus.webview.close(self);
+	                    databasepage.alert('评论成功~');
+	                    plus.webview.getWebviewById('article').reload(true);
+	                }
+	                else {
+	                    databasepage.alert(data.message)
+	                }
+	                dataArr.ispost = true
+	            },
+	            error: function (xhr, type, errorThrown) {
+	                wt.close();
+	                databasepage.alert('网络不给力哦~')
+	                dataArr.ispost = true
+	            }
+	        });
+	    }
+	}
+};
+
+(function($) {
+	document.getElementById('content').value='';
+})(mui);
+</script>
+</body>
+</html>

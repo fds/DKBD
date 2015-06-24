@@ -1,0 +1,24 @@
+﻿<input type="button" id="test" value="点击测试" />
+
+<script type="text/javascript">
+	var user = {
+		userName: "yl88",
+		passWord: "123456"
+	};
+
+	$("#test").click(function () {
+		$.ajax({
+			url: "/User/Regsiter",
+			type: "post",
+			data: user,
+			success: function (data) {
+				if (data.code == 0) {
+					alert("注册成功,用户ID:" + data.data);
+				} else {
+					alert("注册失败,错误消息:" + data.message);
+				}
+			}
+		});
+	});
+</script>
+

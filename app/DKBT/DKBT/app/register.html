@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+<title>蹲坑宝典</title>
+<link href="../css/mui.min.css" rel="stylesheet"/>
+<link rel="stylesheet" href="../css/style.css"/>
+<link rel="stylesheet" href="../css/font-awesome.min.css"/>
+</head>
+
+<body>
+<header class="mui-bar mui-bar-nav">
+  <div class="title">
+  	<a href="#" class="mui-btn mui-btn-link mui-btn-nav mui-pull-left mui-action-back"><span class="mui-icon mui-icon-back"></span>返回</a>
+  	<h1 class="mui-title">注册</h1>
+  </div>
+</header>
+
+<div class="page mui-content" style="padding-top:50px;">
+  <div class="account">
+    <h3>蹲坑账号注册</h3>
+	<p><input type="text" placeholder="邮箱/昵称" value="" id="loginname"></p>
+    <p><input type="password" placeholder="密码" value="" id="loginpwd"></p>
+    <p ><a class="login" href="javascript:dataArr.register()" id='register'>注册</a></p>
+  </div>
+</div>
+
+<script src="../js/mui.min.js"></script>
+<script src="../js/common/string.js"></script>
+<script src="../js/common/basepage.js"></script>
+<script type="text/javascript" charset="utf-8">
+var dataArr={
+	islogin:true,
+	register: function () {		
+		if(dataArr.islogin){
+			var name=document.getElementById("loginname").value.trim();
+			var pwd=document.getElementById("loginpwd").value.trim();
+			if(name.length<1||pwd.length<1)
+			{
+				databasepage.alert("请输入用户名或密码")
+				return;
+			}
+//			var pattern = /^(\w){6,20}$/;
+//			if(name.match(pattern)==null||pwd.match(pattern)==null){
+//				databasepage.alert("用户名或密码必须是字母、数字或者下划线组成")
+//				return;
+//			}
+			dataArr.islogin=false;
+			var web=plus.webview.all();
+			var curr = plus.webview.getWebviewById('register');
+			var selfpar = plus.webview.getWebviewById('login');
+									
+			var wt = plus.nativeUI.showWaiting();
+			mui.ajax(databasepage.registerurl(), {
+	            data: {
+	                userName: name,
+	                passWord: pwd
+	            },
+	            dataType: 'json',//服务器返回json格式数据
+	            type: 'post',//HTTP请求类型
+	            timeout: 6000,//超时时间设置为10秒；
+	            success: function (data) {
+	            	dataArr.islogin=true;
+	            	wt.close();
+	                if(data.data!="null"&&data.data!="0"){
+						databasepage.setItem("DKBD_USER",data.data);
+						selfpar.close();
+						curr.close();
+						web[0].show();
+						web[0].evalJS("redicMy()");
+					}
+					else{
+						databasepage.alert(data.message)
+					}
+	            },
+	            error: function (xhr, type, errorThrown) {
+	                databasepage.alert('网络不给力哦~')
+	                dataArr.islogin=true;
+	            }
+	        });
+		}
+	}
+};
+
+mui.init();
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+﻿<input type="button" id="test" value="点击发布评论" />
+
+<script type="text/javascript">
+	var comment = {};
+	comment.articleId = 5523;
+	comment.articleCategoryId = 32;
+	comment.content = "评论___爆笑创意蔬菜图片_test~爆笑创意蔬菜图片_test";
+
+	$("#test").click(function () {
+		$.ajax({
+			url: "/Article/PublishComment?" + accessTokenParm,
+			type: "post",
+			data: comment,
+			success: function (data) {
+				if (data.code == 0) {
+					alert("发布成功,评论id:" + data.data);
+				} else {
+					alert("发布失败,错误消息:" + data.message);
+				}
+			}
+		});
+	});
+</script>

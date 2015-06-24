@@ -1,0 +1,222 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+<title>蹲坑宝典</title>
+<link href="../css/mui.min.css" rel="stylesheet"/>
+<link href="../css/style.css" rel="stylesheet"/>
+<link href="../css/font-awesome.min.css" rel="stylesheet"/>
+<script src="../js/mui.min.js"></script>
+<script src="../js/common/basepage.js"></script>
+<script src="../js/common/string.js"></script>
+<style>
+html,body { background-color: #EFEFEF;}
+.mui-bar .mui-title{ right:80px; left:80px;}
+</style>
+</head>
+
+<body>
+<header class="mui-bar mui-bar-nav">
+  <div class="title">
+  	<!--<a href="#" class="mui-btn mui-btn-link mui-btn-nav mui-pull-left"><span class="mui-icon mui-icon-back"></span>返回</a>-->
+  	<h1 class="mui-title">我的</h1>
+  	<a href="#" class="mui-btn mui-btn-link mui-btn-nav mui-pull-right"></a>
+  </div>
+</header>
+<div class="mui-content">
+  <div class="user-info">
+    <div class="info">
+      <div class="avatar" id="avatarpath">
+      	<img src="../images/avatar.jpg" id='picpath'>
+      	<span class="mui-icon mui-icon-camera"></span>
+      </div>
+      <div class="name" id='name'></div>
+    </div>
+    <div class="quick-links">
+      <a href="#" id='attention'><span>0</span>关注</a>
+      <a href="#" id='frend'><span>0</span>粉丝</a>
+      <a href="#" id="collectcount"><span>0</span>收藏</a>
+      <a href="#" id="msgcount"><span>0</span>消息通知</a>
+    </div>
+  </div>
+  <div class="user-function-list">
+    <!--<div class="item">
+      <a href="#"><span>推荐关注</span><b class="fa fa-angle-right"></b></a>
+    </div>
+    <div class="item">
+      <a href="#"><span>审核</span><b class="fa fa-angle-right"></b></a>
+    </div>-->
+    <div class="item">
+      <a href="javascript:databasepage.openWin2('mypublistlist.html','mypublistlist',{});"><span>我的帖子</span><b class="fa fa-angle-right"></b></a>
+    </div>
+    <!--<div class="item">
+      <a href="#"><span>最近热门</span><b class="fa fa-angle-right"></b></a>
+    </div>-->
+    <div class="item">
+      <a href="javascript:databasepage.openWin2('favorites.html','favorites',{});"><span>我的收藏</span><b class="fa fa-angle-right"></b></a>
+    </div>
+    <div class="item">
+      <a href="javascript:databasepage.openWin2('feedback.html','feedback',{});"><span>我的反馈</span><b class="fa fa-angle-right"></b></a>
+    </div>
+    <div class="item mui-table-view" style="margin-top: 25px;">
+      <a href="javascript:dataArr.logout()" style="text-align: center;color: #FF3B30;">退出登录</a>
+    </div>
+  </div>
+  <div class="version">当前版本 V0.5.0</div>
+</div>
+
+<div class="changeAavatar" style="display: none;z-index: 9999;" id="changeAavatar">
+	<h3>更换头像</h3>
+	<div class="method">
+		<button class="mui-btn mui-btn-negative" id='getImage'>拍照</button><button class="mui-btn" id="getgallery">相册</button>
+	</div>
+</div>
+
+<script type="text/javascript" charset="utf-8">
+    mui.init({
+        keyEventBind: {
+            backbutton: false  //关闭back按键监听
+        }
+    });
+
+    var dataArr = {
+    	ispost:true,
+        init: function () {
+        	setTimeout(function () {
+	        	//初始化赋值
+	            var user = databasepage.getItem("DKBD_USER");
+		        if(user!=null){
+		        	document.getElementById("name").innerText = user.user_info.user_name;
+		        	if(user.user_info.face_img!=null){
+		        		document.getElementById('picpath').src = user.user_info.face_img;
+		        	}
+		        }
+		        //用户收藏数
+                databasepage.getData(databasepage.getCollectArticleCount_token(), function (data) {
+	                if (data != null && data.code == 0) {
+	                      document.getElementById("collectcount").innerHTML = '<span>'+data.data+'</span>收藏';
+	                }
+	            })
+		                    
+	        }, 1000);
+
+        },
+        logout: function () {
+            databasepage.remove('DKBD_USER');
+            databasepage.remove(databasepage.SELECT_CATEGORY);
+            databasepage.openWin2("login.html", 'login', { preload: true })
+        },
+        getImage: function () {
+            document.getElementById("changeAavatar").style.display = 'none';
+            mask.close();//关闭遮罩
+	        plus.camera.getCamera().captureImage(function (p) {
+	            dataArr.uploadPic(plus.io.convertLocalFileSystemURL(p));
+	        }, function (e) {
+	        }, { filename: "_doc/camera/", index: i });	
+	    },
+	    getgallery: function () {
+            document.getElementById("changeAavatar").style.display = 'none';
+            mask.close();//关闭遮罩
+	        plus.gallery.pick(function (path) {
+	            dataArr.uploadPic(path);
+	        }, function (e) {
+	        });
+	    },
+	    uploadPic:function(pic){
+	    	var that=this;
+	        if (that.ispost) {
+	            that.ispost = false;
+	            var wt = plus.nativeUI.showWaiting();
+	            
+               	var img = new Image();
+		        img.src = pic;        // 传过来的图片路径在这里用。
+		        img.onload = function () {
+		            var imgobj = this;
+		            //生成比例 
+		            var w = imgobj.width,
+		                h = imgobj.height,
+		                scale = w / h;
+		            w = 480 || w;              //480  你想压缩到多大，改这里
+		            h = w / scale;
+		            //生成canvas
+		            var canvas = document.createElement('canvas');
+		            var ctx = canvas.getContext('2d');
+		 			// 重置canvas宽高  
+		            canvas.width = w;  
+		            canvas.height = h; 
+		            ctx.drawImage(imgobj, 0, 0, w, h);
+		           	var base64 = canvas.toDataURL('image/jpeg', 1 || 0.8);   //1最清晰，越低越模糊。
+		            canvas=null;
+					mui.ajax(databasepage.uploadFaceImg_token(), {
+		                data: {
+		                    content: base64
+		                },
+		                dataType: 'json',//服务器返回json格式数据
+		                type: 'post',//HTTP请求类型
+		                timeout: 5000,//超时时间设置为5秒；
+		                success: function (data) {
+		                    wt.close();
+		                    that.ispost = true;
+		                    if (data.code == 0) {
+		                    	document.getElementById('picpath').src=base64;
+		                    	var user = databasepage.getItem("DKBD_USER");
+		                    	user.user_info.face_img=base64;
+		                    	databasepage.setItem('DKBD_USER',user);
+		                        databasepage.alert('设置成功');
+		                    }
+		                    else {
+		                        databasepage.alert(data.message);
+		                    }
+		                },
+		                error: function (xhr, type, errorThrown) {
+		                    wt.close();
+		                    that.ispost = true;
+		                    databasepage.alert('网络不给力哦~');
+		                }
+		            });
+		        }
+	        }
+	    },
+    };
+
+    var mask =null;
+    var i=1,gentry=null;
+    mui.plusReady(function () {
+    	// 获取摄像头目录对象
+	    plus.io.resolveLocalFileSystemURL("_doc/", function (entry) {
+	        entry.getDirectory("camera", { create: true }, function (dir) {
+	            gentry = dir;
+	        }, function (e) {
+	            databasepage.alert("Get directory \"camera\" failed: " + e.message);
+	        });
+	    }, function (e) {
+	        databasepage.alert("Resolve \"_doc/\" failed: " + e.message);
+	    });
+    
+    	mask = mui.createMask(function () {
+            document.getElementById("changeAavatar").style.display = 'none';
+            mask.close();//关闭遮罩
+        });
+                
+    	document.getElementById("avatarpath").addEventListener('tap', function () {
+    		mask.show();//开启遮罩
+    		document.getElementById("changeAavatar").style.display='block';
+		});
+    	
+    	document.getElementById("getImage").addEventListener('tap', function () {
+    		if (dataArr.ispost) {
+    			dataArr.getImage();
+    		}
+		});
+		
+    	document.getElementById("getgallery").addEventListener('tap', function () {
+    		if (dataArr.ispost) {
+    			dataArr.getgallery();
+    		}
+		})
+    	
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+<title>蹲坑宝典</title>
+<link href="../css/mui.min.css" rel="stylesheet"/>
+<link href="../css/font-awesome.min.css" rel="stylesheet" />
+<link href="../css/style.css" rel="stylesheet" />
+<script src="../js/mui.min.js"></script>
+<script src="../js/common/basepage.js"></script>
+</head>
+
+<body>
+<div class="mui-content">
+  <div class="fun-list">
+    <article ><a href="javascript:pushlishTool.publish('image');"><img src="../images/images.png"></a><span>发图片</span></article>
+    <article ><a href="javascript:pushlishTool.publish('text');"><img src="../images/articles.png"></a><span>发段子</span></article>
+<!--    <article ><a href="javascript:pushlishTool.publish('video');"><img src="../images/video.png"></a><span>发视频</span></article>-->
+    <article ><a href="javascript:pushlishTool.publish('check');"><img src="../images/check.png"></a><span>审帖</span></article>
+  </div>
+</div>
+<div class="fun-control">
+  <p id='tiptext'>默认发布到糗事频道</p>
+  <p><a class="change" href="#otherChannel">发布到其它频道</a></p>
+  <p><a href="#" class="mui-action-back">取消</a></p>
+</div>
+
+<div id="otherChannel" class="otherChannel mui-popover">
+	<ul id="category_ul">
+	</ul>
+</div>
+
+<script type="text/javascript" charset="utf-8">
+	mui.init();
+	
+	var pushlishTool = {
+	    categoryId: 1,
+	    publish: function (type) {
+	        if (type == 'image') {
+	            databasepage.openWin('publish-img', 'publish-img.html', { categoryId: pushlishTool.categoryId, preate: true })
+	        }
+	        else if (type == 'video') {
+	            databasepage.openWin('publish-video', 'publish-video.html', { categoryId: pushlishTool.categoryId, preate: true })
+	        }
+	        else if (type == 'text') {
+	            databasepage.openWin('publish-article', 'publish-article.html', { categoryId: pushlishTool.categoryId, preate: true })
+	        }
+	        else if (type == 'check') {
+	            databasepage.openWin('check', 'check.html', { categoryId: pushlishTool.categoryId, preate: true })
+	        }
+	    },
+	    goback: function () {
+	        plus.webview.currentWebview().close();
+	    },
+	    setCategoryID: function (categoryid, text) {
+	        pushlishTool.categoryId = categoryid;
+	        mui('.mui-popover').popover('hide');
+	        document.getElementById('tiptext').innerText = '发送到【' + text + '】频道';
+	    }
+	};
+
+
+mui.plusReady(function () {
+    //初始化类别
+    var clist = databasepage.getCategoryList();
+    var ul = document.getElementById('category_ul');
+    for (var i = 0; i < clist.length; i++) {
+        var li = document.createElement('li');
+        li.innerHTML = '<a href="javascript:pushlishTool.setCategoryID(' + clist[i].category_id + ',&quot;' + clist[i].category_name + '&quot;)">' + clist[i].category_name + '</a>';
+        ul.appendChild(li);
+    }
+});
+
+</script>
+</body>
+</html>

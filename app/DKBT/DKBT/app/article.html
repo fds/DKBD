@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+<title></title>
+<link href="../css/mui.min.css" rel="stylesheet"/>
+<link href="../css/font-awesome.min.css" rel="stylesheet" />
+<link href="../css/style.css" rel="stylesheet" />
+<script src="../js/mui.min.js"></script>
+<script src="../js/common/basepage.js"></script>
+<style>
+.mui-bar .title a{ color: #666;}
+.mui-table-view{ background: none;}
+.mui-slider-indicator{ bottom: 0;}
+.mui-bar .mui-icon b{ font-size: 24px;}
+.mui-bar .mui-icon{ font-size: 18px;}
+</style>
+</head>
+
+<body>
+<header class="mui-bar mui-bar-nav">
+  <div class="title">
+    <a class="mui-icon mui-pull-left back mui-action-back" href="#"><b class="fa fa-angle-left"></b> 返回</a>
+    <h1 class="mui-title">评论</h1>
+  </div>
+</header>
+<div class="mui-content" style="padding-bottom: 60px;">
+  <div class="section">
+  	<a class="title" style="margin-bottom: 30px;">
+	  <div class="avatar">
+		<img src="../images/avatar.jpg" id="picpath">
+	  </div>
+	  <div class="name" id="name">他很懒，名字都不留</div>
+	</a>
+	<div class="article" >
+		<p id="article"></p>
+    </div>
+	<div class="comment">
+	  <a><span id="flower"><b class="flower"></b>0</span></a>
+	  <a><span id="eggs"><b class="eggs" ></b>0</span></a>
+	  <a><span id="collect"><b class="fa fa-star-o"></b>0</span></a>
+	  <a><span id="ushare"><b class="fa fa-share-square-o"></b>0</span></a>
+	  <a ><span id="comment"><b class="fa fa-comment-o"></b>0</span></a>
+	</div>
+  </div>
+  <div class="comment-box mui-scroll-wrapper" id="pullrefresh">
+    <h3 style="font-size: 18px;">最新评论</h3>
+    <div class="comment-list mui-scroll">      
+    </div>
+  </div>
+</div>
+<div class="comment-footer mui-bar mui-bar-tab">
+    <a href="javascript:dataArr.openWin('comment-publish','comment-publish.html');"><b class="fa fa-edit"></b> 写评论</a>
+</div>
+
+<div id="share" class="share" style="display:none">
+<!--  <div class="count"><span>0</span>人分享</div>-->
+  <h3>分享给好友</h3>
+  <div class="share-list">
+    <article><a href="javascript:dataArr.share('tencentweibo')"><img src="../images/qq_friends.png"></a><span>腾讯微博</span></article>
+    <article><a href="javascript:dataArr.share('weixin','WXSceneSession')"><img src="../images/webchat.png"></a><span>微信好友</span></article>
+    <article><a href="javascript:dataArr.share('weixin','WXSceneTimeline')"><img src="../images/chat_friends.png"></a><span>微信朋友圈</span></article>
+    <article><a href="javascript:dataArr.share('sinaweibo')"><img src="../images/sina.png"></a><span>新浪微博</span></article>
+  </div>
+  <div class="closed" id="cancelshare">取消</div>
+</div>
+
+<script type="text/javascript" charset="utf-8">
+    setTimeout(function () {
+        mui.init({
+            pullRefresh: {
+                container: '#pullrefresh',
+                down: {
+                    contentdown: "下拉可以刷新",//可选，在下拉可刷新状态时，下拉刷新控件上显示的标题内容
+                    contentover: "释放立即刷新",//可选，在释放可刷新状态时，下拉刷新控件上显示的标题内容
+                    contentrefresh: "玩命刷新...",//可选，正在刷新状态时，下拉刷新控件上显示的标题内容
+                    callback: dataArr.pulldownRefresh
+                },
+                up: {
+                    contentrefresh: "玩命加载...",//可选，正在加载状态时，上拉加载控件上显示的标题内容
+                    contentnomore: '没有了~',//可选，请求完毕若没有更多数据时显示的提醒内容；
+                    callback: dataArr.pullupRefresh
+                }
+            }
+        });
+    },300);
+
+    var dataArr = {
+        page: 1,
+        page_size: 20,
+        ispost: true,
+        pullupRefresh: function () {
+            //上拉加载具体业务实现
+            setTimeout(function () {
+                var self = plus.webview.currentWebview();
+                databasepage.getData(databasepage.getcommentlisturl() + '&articleId=' + self.articleId + '&page=' + (dataArr.page++), function (data) {
+                    var currcount = (dataArr.page - 2) * dataArr.page_size + data.data.data_list.length;
+                    mui('#pullrefresh').pullRefresh().endPullupToRefresh(currcount >= data.data.total_count); //参数为true代表没有更多数据了。
+                    dataArr.getData(data.data, "up");
+                })
+            }, 1000);
+        },
+        pulldownRefresh: function () {
+            //下拉刷新具体业务实现
+            dataArr.page = 1;
+            setTimeout(function () {
+                var self = plus.webview.currentWebview();
+                databasepage.getData(databasepage.getcommentlisturl() + '&categoryId=' + self.articleId + '&page=' + dataArr.page, function (data) {
+                    if (data.data.data_list.length > 1) {
+                        document.body.querySelector('.comment-list').innerHTML = '';
+                    }
+                    dataArr.getData(data.data, "down");
+                    mui('#pullrefresh').pullRefresh().endPulldownToRefresh(); //refresh completed
+                })
+            }, 1000);
+        },
+        init: function () {
+        	databasepage.init()//初始化数据库
+            var self = plus.webview.currentWebview();
+            databasepage.loadSingleByPageDB(self.articleId,self.categoryId,function(data){
+            	if(data!=null&&data.length>0){
+            		dataArr.setHtmlData(data[0])//获取离线数据
+            	}
+            	else{//不存在重新获取
+            		databasepage.getData(databasepage.getdetailurl() + '?articleId=' + self.articleId + '&categoryId=' + self.categoryId, function (data) {
+		                dataArr.setHtmlData(data.data)
+		            })
+            	}
+            })
+        },
+        setHtmlData:function(data){
+        	if (data != "null" && data != "0") {
+                    if (data.face_img != null) {
+                        document.getElementById("picpath").src = data.face_img;
+                    }
+                    if (data.author != null) {
+                        document.getElementById("name").innerText = data.author;
+                    }
+                    document.getElementById("article").innerHTML = data.article_content;
+
+                    document.getElementById("flower").innerHTML = '<b class="flower"></b>' + data.flower_count;
+                    document.getElementById("flower").parentElement.href = 'javascript:dataArr.setCount(' + data.article_id + ',' + data.category_id + ',2)'
+
+                    document.getElementById("eggs").innerHTML = '<b class="eggs"></b>' + data.egg_count;
+                    document.getElementById("eggs").parentElement.href = 'javascript:dataArr.setCount(' + data.article_id + ',' + data.category_id + ',3)';
+
+                    document.getElementById("collect").innerHTML = '<b class="fa fa-star-o collect"></b>' + data.collect_count;
+                    document.getElementById("collect").parentElement.href = 'javascript:dataArr.collect(' + data.article_id + ',' + data.category_id + ')';
+
+
+                    document.getElementById("ushare").innerHTML = '<b class="fa fa-share-square-o"></b>0' ;
+                    document.getElementById("ushare").parentElement.href = 'javascript:dataArr.openShare(' + data.article_id + ',' + data.category_id + ')';
+                   
+                    document.getElementById("comment").innerHTML = '<b class="fa fa-comment-o"></b>' + data.comment_count;
+                }
+                else {
+                    databasepage.alert("网络不给力哦~")
+                }
+        },
+        setCount: function (articleId, articleCategoryId, type) {
+	        if (databasepage.getItem("DKBD_USER") == null) {
+	        	databasepage.openWin2('login.html', 'login', { preload: true })
+	        	return;
+	        }
+
+            if (!dataArr.ispost)
+                return;
+
+            var elsename = ''
+            var clsname = ''
+            if (type == 2) {
+                elsename = "flower";
+                clsname = '<b class="flower"></b>';
+            }
+            else if (type == 3) {
+                elsename = "eggs";
+                clsname = '<b class="eggs" ></b>';
+            }
+            var fw = document.getElementById(elsename);
+            if (fw.parentElement.className.indexOf("mui-active") > -1) {
+                return;
+            }
+
+            dataArr.ispost = false
+            var wt = plus.nativeUI.showWaiting();
+            mui.ajax(databasepage.setcounturl_token(), {
+                data: {
+                    articleId: articleId,
+                    articleCategoryId: articleCategoryId,
+                    type: type
+                },
+                dataType: 'json',//服务器返回json格式数据
+                type: 'post',//HTTP请求类型
+                timeout: 5000,//超时时间设置为10秒；
+                success: function (data) {
+                    wt.close();
+                    if (data.code == 0) {
+                        fw.innerHTML = clsname + (parseInt(fw.innerText) + 1);
+                        fw.parentElement.className = fw.parentElement.className + " mui-active"
+                    }
+                    else {
+                        databasepage.alert(data.message)
+                    }
+                    dataArr.ispost = true
+                },
+                error: function (xhr, type, errorThrown) {
+                    wt.close();
+                    databasepage.alert('网络不给力哦~')
+                    dataArr.ispost = true
+                }
+            });
+
+        },
+        collect: function (articleId, articleCategoryId) {
+	        if (databasepage.getItem("DKBD_USER") == null) {
+	        	databasepage.openWin2('login.html', 'login', { preload: true })
+	        	return;
+	        }
+
+            if (!dataArr.ispost)
+                return;
+
+            var fw = document.getElementById('collect');
+            if (fw.parentElement.className.indexOf("mui-active") > -1) {
+                return;
+            }
+
+            dataArr.ispost = false;
+            var wt = plus.nativeUI.showWaiting();
+            mui.ajax(databasepage.setcollectarticleurl_token(), {
+                data: {
+                    articleId: articleId,
+                    categoryId: articleCategoryId,
+                },
+                dataType: 'json',//服务器返回json格式数据
+                type: 'post',//HTTP请求类型
+                timeout: 5000,//超时时间设置为10秒；
+                success: function (data) {
+                    wt.close();
+                    if (data.code == 0) {
+                        fw.innerHTML = '<b class="fa fa-star-o"></b>' + (parseInt(fw.innerText) + 1);
+                        fw.parentElement.className = fw.parentElement.className + " mui-active"
+                    }
+                    else {
+                        databasepage.alert(data.message)
+                    }
+                    dataArr.ispost = true
+                },
+                error: function (xhr, type, errorThrown) {
+                    wt.close();
+                    databasepage.alert('网络不给力哦~')
+                    dataArr.ispost = true
+                }
+            });
+        },
+        getData: function (data, upordown) {
+            var table = document.body.querySelector('.comment-list');
+            var len = data.data_list.length;
+            dataArr.count = len;
+            for (var index = 0; index < len; index++) {
+                var d = data.data_list[index];
+                var li = document.createElement('div');
+                li.className = 'item';
+                li.id = d.comment_id;
+                li.innerHTML = '<div class="photo"><img src="' + (d.face_img != null ? d.face_img : '../images/avatar.jpg') + '"></div>' +
+                  '<div class="title">' +
+                    '<div class="name">' + (d.nick_name!=null?d.nick_name:'') + '</div>' +
+                    '<div class="content">' + d.comment_content + '</div>' +
+                  '</div>' +
+                  '<div class="agree"><b class="fa fa-thumbs-o-up"></b><span>0</span></div>' +
+                '</div>';
+                if (upordown == 'up')
+                    table.appendChild(li)//上拉加载，追加在后面
+                else {
+                    table.insertBefore(li, table.firstChild);//下拉刷新，新纪录插到最前面；
+                }
+
+            }
+        },
+        openWin: function (id, url) {
+	        if (databasepage.getItem("DKBD_USER") == null) {
+	        	databasepage.openWin2('login.html', 'login', { preload: true })
+	        	return;
+	        }
+
+            var self = plus.webview.currentWebview();
+            databasepage.openWin2(url, id, {
+                articleId: self.articleId,
+                categoryId: self.categoryId
+            });
+        },
+        openShare: function (articleId, articleCategoryId) {
+            document.getElementById("share").style.display = 'block';
+            mask.show();//显示遮罩
+        },
+        closeShare: function () {
+            document.getElementById("share").style.display = 'none';
+            mask.close();//关闭遮罩
+        },
+        share: function (id,ex) {
+            dataArr.closeShare();
+            var self = plus.webview.currentWebview();
+            databasepage.shareAction(id, ex,self.articleId+'_'+self.categoryId);//分享接口
+        },
+        refesh: function () {
+            mui('#pullrefresh').pullRefresh().pullupLoading();
+        }
+    };
+
+    if (mui.os.plus) {
+        mui.plusReady(function () {
+            setTimeout(function () {
+                mui('#pullrefresh').pullRefresh().pullupLoading();
+            }, 400);
+            databasepage.updateSerivces(); //更新分享插件
+        });
+    } else {
+        mui.ready(function () {
+            mui('#pullrefresh').pullRefresh().pullupLoading();
+        });
+    }
+
+    var mask=null;
+    (function ($) {
+        mask = mui.createMask(function () {
+            document.getElementById("share").style.display = 'none';
+            mask.close();//关闭遮罩
+        });
+
+        setTimeout(function () {
+            dataArr.init();
+        }, 1000)
+
+        document.getElementById("cancelshare").addEventListener('tap', function () {
+            dataArr.closeShare()
+        });
+    })(mui);
+</script>
+</body>
+</html>

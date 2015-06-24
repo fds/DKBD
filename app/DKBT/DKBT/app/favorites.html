@@ -1,0 +1,197 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+<title>蹲坑宝典</title>
+<link href="../css/mui.min.css" rel="stylesheet"/>
+<link href="../css/style.css" rel="stylesheet"/>
+<link href="../css/font-awesome.min.css" rel="stylesheet"/>
+<style>
+html,body { background-color: #EFEFEF;}
+.mui-bar .mui-title{ right:80px; left:80px;}
+</style>
+</head>
+
+<body>
+<header class="mui-bar mui-bar-nav">
+  <div class="title">
+  	<a href="#" class="mui-btn mui-btn-link mui-btn-nav mui-pull-left mui-action-back"><span class="mui-icon mui-icon-back"></span>返回</a>
+  	<h1 class="mui-title">我的收藏</h1>
+  </div>
+</header>
+<div class="mui-content mui-scroll-wrapper" id="pullrefresh">
+    <div class="mui-scroll itemlist" id="itemlist">
+    </div>
+</div>
+
+<div id="share" class="share" style="display:none;">
+  <div class="count"><span>10</span>人分享</div>
+  <h3>分享给好友</h3>
+  <div class="share-list">
+    <article><a href="#"><img src="images/qq_friends.png"></a><span>QQ好友</span></article>
+    <article><a href="#"><img src="images/webchat.png"></a><span>微信好友</span></article>
+    <article><a href="#"><img src="images/chat_friends.png"></a><span>微信朋友圈</span></article>
+    <article><a href="#"><img src="images/sina.png"></a><span>新浪微博</span></article>
+  </div>
+  <div class="closed" id="cancelshare">取消</div>
+</div>
+
+<div class="changeAavatar" style="display: none;z-index: 9999;" id="cancelfav" data-collectid="">
+	<h3>确定取消收藏</h3>
+	<div class="method">
+		<button class="mui-btn mui-btn-negative" id='ok_fav'>是</button><button class="mui-btn" id="cacel_fav">否</button>
+	</div>
+</div>
+
+<script src="../js/mui.min.js"></script>
+<script src="../js/common/basepage.js"></script>
+<script type="text/javascript" charset="utf-8">
+setTimeout(function() {
+  mui.init({
+    swipeBack: false,
+    pullRefresh: {
+      container: '#pullrefresh',
+      down: {
+          contentdown : "下拉可以刷新",//可选，在下拉可刷新状态时，下拉刷新控件上显示的标题内容
+          contentover : "释放立即刷新",//可选，在释放可刷新状态时，下拉刷新控件上显示的标题内容
+          contentrefresh : "正在刷新...",//可选，正在刷新状态时，下拉刷新控件上显示的标题内容
+          callback: dataArr.pulldownRefresh
+      },
+      up: {
+	      contentrefresh : "正在加载...",//可选，正在加载状态时，上拉加载控件上显示的标题内容
+	      contentnomore:'没有更多数据了',//可选，请求完毕若没有更多数据时显示的提醒内容；
+          callback: dataArr.pullupRefresh
+      }
+    }
+  });
+},300);
+  	
+var dataArr = {
+    count: 0,
+    categoryId: 1,
+    page: 1,
+    page_size: 20,
+    ispost:true,
+    pullupRefresh: function () {
+        //上拉加载具体业务实现
+        setTimeout(function () {
+            databasepage.getData(databasepage.getcollectarticleurl_token() + '&page=' + (dataArr.page++), function (data) {
+                var currcount = (dataArr.page - 2) * dataArr.page_size + data.data_list.length;
+                mui('#pullrefresh').pullRefresh().endPullupToRefresh(currcount >= data.total_count); //参数为true代表没有更多数据了。
+                dataArr.getData(data, "up");
+            })
+        }, 1000);
+    },
+    pulldownRefresh: function () {
+        //下拉刷新具体业务实现
+        dataArr.page = 1;
+        setTimeout(function () {
+            databasepage.getData(databasepage.getcollectarticleurl_token() + '&page=' + dataArr.page, function (data) {
+                if (data.data_list.length > 1) {
+                    document.body.querySelector('.itemlist').innerHTML = '';
+                }
+                dataArr.getData(data, "down");
+                mui('#pullrefresh').pullRefresh().endPulldownToRefresh(); //refresh completed
+            })
+        }, 1000);
+    },
+    getData: function (data, upordown) {
+        var table = document.getElementById('itemlist');
+        var len = data.data_list.length;
+        dataArr.count = len;
+        for (var index = 0; index < len; index++) {
+            var d = data.data_list[index];
+            var div = document.createElement('div');
+            div.id = 'fav'+d.collect_id;
+            div.className = 'section';
+            div.innerHTML = '<div class="title">' +
+                    '<div class="avatar"><img src="' + (d.face_img != null ? d.face_img : '../images/avatar.jpg') + '"></div>' +
+                    '<div class="name">' + (d.author != null ? d.author : '他很懒，名字都不留') + '</div>' +
+                    '<a class="delete" href="javascript:dataArr.showWin(' + d.collect_id + ')"><span class="mui-icon mui-icon-close"></span></a>' +
+                  '</div>' +
+                  '<a class="article" href="javascript:dataArr.goDetail(' + d.article_id + ',' + d.category_id + ')">' +
+                  d.title +
+                  '</a>';
+            if (upordown == 'up')
+                table.appendChild(div)//上拉加载，追加在后面
+            else {
+                table.insertBefore(div, table.firstChild);//下拉刷新，新纪录插到最前面；
+            }
+
+        }
+    },
+    goDetail: function (articleId, articleCategoryId) {
+        databasepage.openWin2('article.html', 'article', { articleId: articleId, categoryId: articleCategoryId });
+    },
+    showWin: function (collect_id) {
+        document.getElementById("cancelfav").setAttribute('data-collectid', collect_id);
+        document.getElementById("cancelfav").style.display = 'block';
+        mask.show();//开启遮罩
+    },
+    closeWin: function () {
+        document.getElementById("cancelfav").style.display = 'none';
+        mask.close();//关闭遮罩
+    },
+    delCollect: function (collect_id) {
+        if (dataArr.ispost) {
+            var fav = document.getElementById('fav' + collect_id);
+            dataArr.ispost = false;
+            var wt = plus.nativeUI.showWaiting();
+            mui.ajax(databasepage.delCollect_token(), {
+                data: {
+                    collectId: collect_id
+                },
+                dataType: 'json',//服务器返回json格式数据
+                type: 'post',//HTTP请求类型
+                timeout: 5000,//超时时间设置为10秒；
+                success: function (data) {
+                    wt.close();
+                    dataArr.ispost = true
+                    if (data.code==0&&data.data) {
+                        databasepage.alert('取消收藏成功');
+                        fav.remove();
+                      	if(document.querySelectorAll('.section').length<1){
+                      		mui('#pullrefresh').pullRefresh().pullupLoading();
+                      	}
+                    }
+                    else {
+                        databasepage.alert(data.message)
+                    }
+                },
+                error: function (xhr, type, errorThrown) {
+                    wt.close();
+                    databasepage.alert('网络不给力哦~')
+                    dataArr.ispost = true
+                }
+            });
+        }
+    }
+};
+
+var mask = null;
+mui.plusReady(function () {
+    mask = mui.createMask(function () {
+        document.getElementById("cancelfav").style.display = 'none';
+        mask.close();//关闭遮罩
+    });
+
+    document.getElementById("ok_fav").addEventListener('tap', function () {
+        dataArr.closeWin();
+        var collect_id = document.getElementById("cancelfav").getAttribute('data-collectid');
+        dataArr.delCollect(collect_id);
+    });
+
+    document.getElementById("cacel_fav").addEventListener('tap', function () {
+        dataArr.closeWin();
+    })
+
+    setTimeout(function () {
+        mui('#pullrefresh').pullRefresh().pullupLoading();
+    }, 1000);
+
+});
+
+</script>
+</body>
+</html>

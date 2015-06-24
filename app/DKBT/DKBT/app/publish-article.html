@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>蹲坑宝典</title>
+<link href="../css/mui.min.css" rel="stylesheet"/>
+<link href="../css/font-awesome.min.css" rel="stylesheet" />
+<link href="../css/style.css" rel="stylesheet" />
+<script src="../js/mui.min.js"></script>
+<script src="../js/common/basepage.js"></script>
+<script src="../js/common/string.js"></script>
+</head>
+
+<body>
+<header class="mui-bar mui-bar-nav">
+  <div class="title">
+  	<a href="#" class="mui-btn mui-btn-link mui-btn-nav mui-pull-left mui-action-back"><span class="mui-icon mui-icon-back"></span>返回</a>
+  	<h1 class="mui-title">帖子投稿</h1>
+  	<a href="javascript:dataArr.publish()" class="mui-btn mui-btn-link mui-btn-nav mui-pull-right">发表</a>
+  </div>
+</header>
+<div class="mui-content">
+  <div class="mui-input-row" style="margin: 10px 5px;">
+	<textarea rows="15" placeholder="请勿发布色情、淫秽、政治等违反国家法律的内容" id='content'></textarea>
+  </div>
+</div>
+<script type="text/javascript" charset="utf-8">
+mui.init();
+  	
+var dataArr={
+	ispost:true,
+	publish:function(){
+		if(dataArr.ispost){
+			var content=document.getElementById('content').value.trim();
+			if(content.length<1){
+				databasepage.alert("请填写内容~");
+				return;
+			}
+			dataArr.ispost=false;
+			var wt = plus.nativeUI.showWaiting();
+			var self = plus.webview.currentWebview();
+
+			var content = encodeURIComponent(content);
+			mui.ajax(databasepage.publishurl_token(),{
+				data:{
+					categoryId:self.categoryId,
+					content: content,
+					title: content
+				},
+				dataType:'json',//服务器返回json格式数据
+				type:'post',//HTTP请求类型
+				timeout:5000,//超时时间设置为10秒；
+				success: function (data) {
+				    wt.close();
+					if(data.code==0){
+						plus.webview.getWebviewById('publish').hide()
+		     			self.close();
+		     			databasepage.alert('发帖成功')
+				    }
+			        else{
+			      	    databasepage.alert(data.message)
+				    }
+				    dataArr.ispost=true
+				},
+				error: function (xhr, type, errorThrown) {
+				    wt.close();
+					databasepage.alert('网络不给力哦~')
+					dataArr.ispost=true
+				}
+		  });			
+		}
+	}
+};
+
+(function($) {
+	document.getElementById('content').value='';
+})(mui);
+</script>
+</body>
+</html>
