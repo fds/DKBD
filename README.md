@@ -1,5 +1,8 @@
-# DKBD
-蹲坑宝典  基于 mui+hbuilder 的  Hybrid App 
+# DKBD（蹲坑宝典 ）
+ 
+- 客户端 基于 mui+hbuilder 的  Hybrid App 
+- 服务端采用 .NET API调用采用oauth2.0 授权访问,数据是采用的
+
 
 ![](http://i.imgur.com/Ugkka5r.png)![](http://i.imgur.com/vMjJWjt.png)![](http://i.imgur.com/mHzGTap.png)
 
